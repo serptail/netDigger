@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>netDigger</AssemblyName>
+    <RootNamespace>NetDigger.App</RootNamespace>
+    <ApplicationIcon>..\..\Resources\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetDigger.Core\NetDigger.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\Resources\icon.ico" Link="Assets\icon.ico" />
+    <Resource Include="..\..\Resources\mark.png" Link="Assets\mark.png" />
+  </ItemGroup>
+
+</Project>

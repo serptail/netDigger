@@ -1,0 +1,63 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" x:Class="netDigger.SelectDataTypesWindow"
+        Title="Select Data Types" Height="390" Width="395" 
+        MinHeight="300" MinWidth="400"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10,20,12,9">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="172*" />
+            <ColumnDefinition Width="91*"/>
+            <ColumnDefinition Width="115*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" MinHeight="9.467" />
+        </Grid.RowDefinitions>
+
+        <!-- Rectangle on the left side -->
+
+        <StackPanel Grid.RowSpan="2" Margin="15,0,3,72" Grid.ColumnSpan="3">
+            <CheckBox Content="Select All" x:Name="selectAllCheckBox" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked" Margin="-15,-17,0,0"/>
+            <CheckBox Content="PDF (.pdf)" x:Name="pdfCheckBox" />
+            <CheckBox Content="CSV (.csv)" x:Name="csvCheckBox" />
+            <CheckBox Content="DOCX (.docx)" x:Name="docxCheckBox" />
+            <CheckBox Content="XLS (.xls)" x:Name="xlsCheckBox" />
+            <CheckBox Content="PPTX (.pptx)" x:Name="pptxCheckBox" />
+            <CheckBox Content="TXT (.txt)" x:Name="txtCheckBox" />
+            <CheckBox Content="Images (.jpg, .jpeg, .png, .svg, .gif)" x:Name="imagesCheckBox" />
+            <CheckBox Content="Videos (.mp3, .mp4, .mkv, .wav)" x:Name="videosCheckBox" />
+            <CheckBox Content="JSON (.json)" x:Name="jsonCheckBox" />
+            <CheckBox Content="DBSQL (.db, .sql, .sqlite, .frm, .ibd, .myd, .myi, .ns, .0, .1, .db3)" x:Name="dbsqlCheckBox" Height="15" Width="375" />
+            <CheckBox Content="XML (.xml, .css)" x:Name="xmlCheckBox" />
+            <CheckBox Content="HTML (.html, .htm, .xhtml)" x:Name="htmlCheckBox" />
+            <CheckBox Content="PHP (.php)" x:Name="phpCheckBox" />
+            <CheckBox Content="JS (.js)" x:Name="jsCheckBox" />
+            <CheckBox Content="Archives (.zip, .gz, .tar)" x:Name="archivesCheckBox" />
+            <CheckBox Content="Miscellaneous" x:Name="miscCheckBox" />
+        </StackPanel>
+
+        <!-- Top-right square -->
+        <StackPanel Grid.Column="2" Grid.Row="0" Margin="5,5,5,5"/>
+
+        <!-- Bottom-right square -->
+        <StackPanel Grid.Column="2" Grid.Row="2" Margin="5,5,5,5"/>
+        <Button Content="Browse..." x:Name="browseButton" Click="BrowseButton_Click" Height="20" Grid.Column="2" Margin="9,281,1,2" Grid.Row="1"/>
+        <Button Content="Continue" x:Name="continueButton" Click="ContinueButton_Click" Grid.Column="2" Margin="9,252,1,31" Grid.Row="1" Height="20" />
+        <TextBox x:Name="pathTextBox" IsReadOnly="True" Margin="-1,280,111,1" Grid.Row="1" Grid.ColumnSpan="3" />
+        <GridSplitter HorizontalAlignment="Left" Height="240" Margin="7,0,0,0" Grid.RowSpan="2" VerticalAlignment="Top" Width="1" Background="Black" RenderTransformOrigin="0.5,0.5">
+            <GridSplitter.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </GridSplitter.RenderTransform>
+        </GridSplitter>
+        <GridSplitter Grid.ColumnSpan="3" HorizontalAlignment="Left" Height="1" Margin="2,241,0,0" Grid.Row="1" VerticalAlignment="Top" Width="378" Background="Black" Opacity="0.5"/>
+    </Grid>
+</Window>

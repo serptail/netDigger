@@ -1,0 +1,75 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="1.ico" />
+    <None Remove="2.ico" />
+    <None Remove="CourierPrime-Regular.ttf" />
+    <None Remove="download-_6_.ico" />
+    <None Remove="icon.ico" />
+    <None Remove="KodeMono-Medium.ttf" />
+    <None Remove="Minecraft.ttf" />
+    <None Remove="netdigger-high-resolution-logo-white-transparent.png" />
+    <None Remove="SourceCodePro-SemiBold.ttf" />
+    <None Remove="SpaceGrotesk-Bold.ttf" />
+    <None Remove="VeraMono.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="CourierPrime-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="icon.ico" />
+    <Content Include="KodeMono-Medium.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="icon.ico" />
+    <Content Include="SourceCodePro-SemiBold.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="VeraMono.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="netdigger-high-resolution-logo-white-transparent.png" />
+
+    <Content Include="SpaceGrotesk-Bold.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.1.2" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="EPPlus" Version="7.2.1" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.6" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="OfficeOpenXml.Core.ExcelPackage" Version="1.0.0" />
+    <PackageReference Include="PDFsharp" Version="6.1.1" />
+    <PackageReference Include="PDFsharp-WPF" Version="6.1.1" />
+    <PackageReference Include="PuppeteerSharp" Version="18.0.4" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms">
+      <HintPath>..\..\..\..\Desktop\System.Windows.Forms.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

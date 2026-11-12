@@ -1,0 +1,471 @@
+<Window x:Class="NetDigger.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:app="clr-namespace:NetDigger.App"
+        Title="netDigger" Width="520" Height="700" MinWidth="480" MinHeight="600"
+        WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0"
+                            CornerRadius="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <app:EnumMatchConverter x:Key="EnumEq" />
+        <app:EnumVisibilityConverter x:Key="EnumVis" />
+        <Style x:Key="BrokenNumber" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasBroken}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="{StaticResource Line}" BorderThickness="1">
+        <Grid Margin="16,0,16,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Title bar -->
+            <Grid Grid.Row="0" Height="44" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseDown">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="Assets/mark.png" Width="18" Height="18"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Text="netDigger" Margin="8,0,0,0" FontWeight="SemiBold"
+                               Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Margin="0,0,-8,0">
+                    <Button Style="{StaticResource Ghost}" Width="40" Height="30" Padding="0" Click="Minimize_Click"
+                            ToolTip="Minimize">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE921;" FontSize="10" />
+                    </Button>
+                    <Button Style="{StaticResource Ghost}" Width="40" Height="30" Padding="0" Click="Close_Click"
+                            ToolTip="Close">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8BB;" FontSize="10" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Headline + address + main action -->
+            <StackPanel Grid.Row="1" Margin="0,6,0,0">
+                <TextBlock Text="Find every page, file and broken link." FontSize="20" FontWeight="SemiBold"
+                           TextWrapping="Wrap" Margin="0,0,0,14" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Style="{StaticResource Input}" Tag="example.com" Height="46" FontSize="14"
+                             Padding="14,0" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding IsIdle}">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding StartStopCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <Button Grid.Column="1" Margin="8,0,0,0" Width="112" Height="46"
+                            Command="{Binding StartStopCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource Primary}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource Danger}" />
+                                        <Setter Property="Foreground" Value="{StaticResource Danger}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding StartGlyph}" FontSize="12" />
+                            <TextBlock Text="{Binding StartLabel}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+
+            <!-- Quick settings -->
+            <WrapPanel Grid.Row="2" Margin="0,14,0,0">
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
+                        BorderThickness="1" CornerRadius="{StaticResource RControl}" Padding="3" Margin="0,0,8,8">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="scope" Style="{StaticResource Seg}" Content="Host"
+                                     ToolTip="Only this exact site"
+                                     IsChecked="{Binding Scope, Converter={StaticResource EnumEq}, ConverterParameter=SameHost}" />
+                        <RadioButton GroupName="scope" Style="{StaticResource Seg}" Content="Site"
+                                     ToolTip="This site and its subdomains"
+                                     IsChecked="{Binding Scope, Converter={StaticResource EnumEq}, ConverterParameter=SameSite}" />
+                        <RadioButton GroupName="scope" Style="{StaticResource Seg}" Content="Any"
+                                     ToolTip="Follow links anywhere"
+                                     IsChecked="{Binding Scope, Converter={StaticResource EnumEq}, ConverterParameter=Unrestricted}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
+                        BorderThickness="1" CornerRadius="{StaticResource RControl}" Padding="3" Margin="0,0,8,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Depth" Foreground="{StaticResource Muted}" VerticalAlignment="Center"
+                                   Margin="8,0,4,0" />
+                        <Button Style="{StaticResource StepButton}" Content="&#xE738;"
+                                Command="{Binding DepthDownCommand}" />
+                        <TextBlock Style="{StaticResource Mono}" Text="{Binding Depth}" Width="22"
+                                   TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Style="{StaticResource StepButton}" Content="&#xE710;"
+                                Command="{Binding DepthUpCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
+                        BorderThickness="1" CornerRadius="{StaticResource RControl}" Padding="3" Margin="0,0,8,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Pages" Foreground="{StaticResource Muted}" VerticalAlignment="Center"
+                                   Margin="8,0,4,0" />
+                        <Button Style="{StaticResource StepButton}" Content="&#xE738;"
+                                Command="{Binding PagesDownCommand}" />
+                        <TextBlock Style="{StaticResource Mono}" Text="{Binding MaxPages, StringFormat=N0}"
+                                   Width="52" TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Style="{StaticResource StepButton}" Content="&#xE710;"
+                                Command="{Binding PagesUpCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <Button Style="{StaticResource Ghost}" Command="{Binding ToggleOptionsCommand}" Height="34"
+                        Margin="0,0,0,8" ToolTip="More options">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Options" VerticalAlignment="Center" />
+                        <TextBlock Margin="6,0,0,0" FontSize="10">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                    <Setter Property="Text" Value="&#xE70D;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOptionsOpen}" Value="True">
+                                            <Setter Property="Text" Value="&#xE70E;" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+            <!-- Options -->
+            <Border Grid.Row="3" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
+                    BorderThickness="1" CornerRadius="{StaticResource RCard}" Padding="14" Margin="0,0,0,8"
+                    Visibility="{Binding IsOptionsOpen, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,14">
+                        <TextBlock Text="Speed" Foreground="{StaticResource Muted}" VerticalAlignment="Center"
+                                   Width="60" />
+                        <Border Background="{StaticResource Raised}" CornerRadius="{StaticResource RControl}"
+                                Padding="3" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton GroupName="speed" Style="{StaticResource Seg}" Content="Gentle"
+                                             IsChecked="{Binding Speed, Converter={StaticResource EnumEq}, ConverterParameter=Gentle}" />
+                                <RadioButton GroupName="speed" Style="{StaticResource Seg}" Content="Normal"
+                                             IsChecked="{Binding Speed, Converter={StaticResource EnumEq}, ConverterParameter=Normal}" />
+                                <RadioButton GroupName="speed" Style="{StaticResource Seg}" Content="Fast"
+                                             IsChecked="{Binding Speed, Converter={StaticResource EnumEq}, ConverterParameter=Fast}" />
+                            </StackPanel>
+                        </Border>
+                    </DockPanel>
+
+                    <UniformGrid Columns="2" Margin="0,0,0,6">
+                        <CheckBox Style="{StaticResource Switch}" Content="Obey robots.txt" Margin="0,0,0,10"
+                                  IsChecked="{Binding RespectRobots}" />
+                        <CheckBox Style="{StaticResource Switch}" Content="Read sitemaps" Margin="0,0,0,10"
+                                  IsChecked="{Binding UseSitemaps}" />
+                        <CheckBox Style="{StaticResource Switch}" Content="Check images and files" Margin="0,0,0,10"
+                                  IsChecked="{Binding ProbeAssets}" />
+                        <CheckBox Style="{StaticResource Switch}" Content="Check external links" Margin="0,0,0,10"
+                                  IsChecked="{Binding CheckExternal}" />
+                        <CheckBox Style="{StaticResource Switch}" Content="Mine scripts for URLs" Margin="0,0,0,10"
+                                  IsChecked="{Binding MineScripts}" />
+                    </UniformGrid>
+
+                    <DockPanel Margin="0,0,0,14">
+                        <TextBlock Text="Collect" Foreground="{StaticResource Muted}" Width="60" Margin="0,5,0,0"
+                                   VerticalAlignment="Top" />
+                        <ItemsControl ItemsSource="{Binding Chips}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton Style="{StaticResource Chip}" Content="{Binding Label}"
+                                                  IsChecked="{Binding IsOn, Mode=TwoWay}" Margin="0,0,6,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Style="{StaticResource Input}" Background="{StaticResource Raised}" Height="34"
+                                 Tag="Only URLs matching (regex)" FontFamily="{StaticResource MonoFont}"
+                                 FontSize="12" Text="{Binding IncludePattern, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Column="2" Style="{StaticResource Input}" Background="{StaticResource Raised}"
+                                 Height="34" Tag="Skip URLs matching (regex)" FontFamily="{StaticResource MonoFont}"
+                                 FontSize="12" Text="{Binding ExcludePattern, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Style="{StaticResource Input}" Background="{StaticResource Raised}" Height="34"
+                                 Tag="Save crawls to" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                 Text="{Binding OutputRoot, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="1" Style="{StaticResource Ghost}" Margin="8,0,0,0" Height="34"
+                                Content="Browse" Command="{Binding BrowseCommand}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Live progress -->
+            <Border Grid.Row="4" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
+                    BorderThickness="1" CornerRadius="{StaticResource RCard}" Padding="14" Margin="0,0,0,12"
+                    Visibility="{Binding HasRun, Converter={StaticResource BoolToVis}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasRun}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1"
+                                                             Duration="0:0:0.25" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <UniformGrid Columns="4">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Mono}" Text="{Binding Discovered, StringFormat=N0}"
+                                       FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Found" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Mono}" Text="{Binding Fetched, StringFormat=N0}"
+                                       FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Checked" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource BrokenNumber}" Text="{Binding Broken, StringFormat=N0}"
+                                       FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Broken" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Mono}" Text="{Binding Queued, StringFormat=N0}"
+                                       FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Waiting" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <ProgressBar Margin="0,12,0,10" Value="{Binding Fraction, Mode=OneWay}" />
+
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" Text="{Binding Elapsed}"
+                                   Foreground="{StaticResource Muted}" Margin="12,0,0,0" />
+                        <TextBlock Style="{StaticResource Mono}" FontSize="11" Foreground="{StaticResource Muted}"
+                                   Text="{Binding CurrentUrl}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Results / log -->
+            <Grid Grid.Row="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel>
+                    <Border DockPanel.Dock="Left" Background="{StaticResource Surface}"
+                            BorderBrush="{StaticResource Line}" BorderThickness="1"
+                            CornerRadius="{StaticResource RControl}" Padding="3">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton GroupName="tab" Style="{StaticResource Seg}" Content="Results"
+                                         IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Results}" />
+                            <RadioButton GroupName="tab" Style="{StaticResource Seg}" Content="Log"
+                                         IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Log}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBox Style="{StaticResource Input}" Tag="Search results" Height="34" Margin="10,0,0,0"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding Tab, Converter={StaticResource EnumVis}, ConverterParameter=Results}" />
+                </DockPanel>
+
+                <DockPanel Grid.Row="1" Margin="0,10,0,6"
+                           Visibility="{Binding Tab, Converter={StaticResource EnumVis}, ConverterParameter=Results}">
+                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Caption}" Text="{Binding RowCountText}"
+                               VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="filter" Style="{StaticResource Seg}" Content="All" Padding="9,3"
+                                     IsChecked="{Binding Filter, Converter={StaticResource EnumEq}, ConverterParameter=All}" />
+                        <RadioButton GroupName="filter" Style="{StaticResource Seg}" Content="Pages" Padding="9,3"
+                                     IsChecked="{Binding Filter, Converter={StaticResource EnumEq}, ConverterParameter=Pages}" />
+                        <RadioButton GroupName="filter" Style="{StaticResource Seg}" Content="Files" Padding="9,3"
+                                     IsChecked="{Binding Filter, Converter={StaticResource EnumEq}, ConverterParameter=Files}" />
+                        <RadioButton GroupName="filter" Style="{StaticResource Seg}" Content="Broken" Padding="9,3"
+                                     IsChecked="{Binding Filter, Converter={StaticResource EnumEq}, ConverterParameter=Broken}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <Grid Grid.Row="2" Margin="0,6,0,0"
+                      Visibility="{Binding Tab, Converter={StaticResource EnumVis}, ConverterParameter=Results}">
+                    <ListBox ItemsSource="{Binding ResultsView}" Background="Transparent" BorderThickness="0"
+                             ItemContainerStyle="{StaticResource RowItem}" MouseDoubleClick="Results_DoubleClick"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Height="28" ToolTip="{Binding Url}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="50" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="18" CornerRadius="5" HorizontalAlignment="Left"
+                                            VerticalAlignment="Center" Background="{Binding StatusBackground}">
+                                        <TextBlock Style="{StaticResource Mono}" FontSize="11"
+                                                   Text="{Binding StatusText}" Foreground="{Binding StatusForeground}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Mono}" Text="{Binding Url}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Caption}" Text="{Binding KindLabel}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Empty state -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,30">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Style="{StaticResource Caption}" TextAlignment="Center"
+                                   Text="{Binding EmptyHint}" />
+                    </StackPanel>
+                </Grid>
+
+                <ListBox Grid.Row="1" Grid.RowSpan="2" Margin="0,10,0,0" ItemsSource="{Binding LogLines}"
+                         Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource RowItem}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Visibility="{Binding Tab, Converter={StaticResource EnumVis}, ConverterParameter=Log}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Style="{StaticResource Mono}" FontSize="11" Text="{Binding}"
+                                       Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,3" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <!-- Footer -->
+            <Grid Grid.Row="6" Margin="0,10,0,0" Height="34">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="2,0,8,0" VerticalAlignment="Center">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource LineStrong}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource Danger}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource AccentText}" />
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="Pulse">
+                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1"
+                                                                     To="0.3" Duration="0:0:0.7" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="Pulse" />
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" MaxWidth="250"
+                               TextTrimming="CharacterEllipsis">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource Muted}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Danger}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource Ghost}" Command="{Binding OpenReportCommand}" ToolTip="Open the HTML report">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8A5;" />
+                            <TextBlock Text="Report" Margin="7,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Ghost}" Command="{Binding OpenCsvCommand}" ToolTip="Open the CSV export">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" />
+                            <TextBlock Text="CSV" Margin="7,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Ghost}" Command="{Binding OpenFolderCommand}" ToolTip="Open the output folder">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" />
+                            <TextBlock Text="Folder" Margin="7,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

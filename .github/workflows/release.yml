@@ -1,0 +1,182 @@
+name: Release
+
+# Run manually from the Actions tab: choose a version and whether to publish it as a draft.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (e.g. 2.0.0)"
+        required: true
+        default: "2.0.0"
+        type: string
+      draft:
+        description: "Create the release as a draft so you can review it first"
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: "Mark the release as a pre-release"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  validate:
+    name: Validate and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Version '$VERSION' is not valid. Use something like 2.0.0 or 2.1.0-beta.1"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Fail early if the release already exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Release v$VERSION already exists. Delete it or pick a new version."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/NetDigger.Core.Tests -c Release
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # Windows desktop app (WPF is Windows-only)
+          - { name: app-win-x64,   project: src/NetDigger.App, asset: netDigger-app, rid: win-x64,     runner: windows-latest, archive: zip }
+          - { name: app-win-arm64, project: src/NetDigger.App, asset: netDigger-app, rid: win-arm64,   runner: windows-latest, archive: zip }
+          # Command-line tool (runs anywhere .NET does)
+          - { name: cli-win-x64,   project: src/NetDigger.Cli, asset: netdigger-cli, rid: win-x64,     runner: ubuntu-latest,  archive: zip }
+          - { name: cli-win-arm64, project: src/NetDigger.Cli, asset: netdigger-cli, rid: win-arm64,   runner: ubuntu-latest,  archive: zip }
+          - { name: cli-linux-x64,   project: src/NetDigger.Cli, asset: netdigger-cli, rid: linux-x64,   runner: ubuntu-latest, archive: tar.gz }
+          - { name: cli-linux-arm64, project: src/NetDigger.Cli, asset: netdigger-cli, rid: linux-arm64, runner: ubuntu-latest, archive: tar.gz }
+          - { name: cli-osx-x64,     project: src/NetDigger.Cli, asset: netdigger-cli, rid: osx-x64,     runner: ubuntu-latest, archive: tar.gz }
+          - { name: cli-osx-arm64,   project: src/NetDigger.Cli, asset: netdigger-cli, rid: osx-arm64,   runner: ubuntu-latest, archive: tar.gz }
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish (self-contained and framework-dependent)
+        run: |
+          common=(-c Release -r "${{ matrix.rid }}" -p:Version="$VERSION" -p:DebugType=none -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true)
+
+          # Includes the .NET runtime: nothing to install, larger download.
+          dotnet publish "${{ matrix.project }}" "${common[@]}" --self-contained true -p:EnableCompressionInSingleFile=true -o out/self-contained
+
+          # Needs the .NET 8 runtime installed: much smaller download.
+          dotnet publish "${{ matrix.project }}" "${common[@]}" --self-contained false -o out/framework-dependent
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          for mode in self-contained framework-dependent; do
+            dir="out/$mode"
+            cp LICENSE README.md "$dir/"
+            name="${{ matrix.asset }}-$VERSION-${{ matrix.rid }}-$mode"
+
+            if [ "${{ matrix.archive }}" = "zip" ]; then
+              if command -v zip >/dev/null 2>&1; then
+                (cd "$dir" && zip -qr "../../dist/$name.zip" .)
+              else
+                7z a -tzip -bso0 "dist/$name.zip" "./$dir/*"
+              fi
+            else
+              # Make sure the executable bit survives for Linux and macOS users.
+              chmod +x "$dir/netdigger" 2>/dev/null || true
+              tar -czf "dist/$name.tar.gz" -C "$dir" .
+            fi
+          done
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Create release
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Write release notes
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Downloads
+
+          **Windows app** (`netDigger-app-*`): the desktop UI. Windows 10/11 only.
+          **Command-line tool** (`netdigger-cli-*`): Windows, Linux and macOS, x64 and ARM64.
+
+          Each comes in two flavours:
+
+          - `self-contained`: includes the .NET runtime. Unzip and run, nothing to install.
+          - `framework-dependent`: much smaller, but needs the [.NET 8 runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+          Verify downloads with `SHA256SUMS.txt`.
+
+          > macOS and Windows may warn about unsigned apps. On macOS, run `xattr -d com.apple.quarantine ./netdigger` once after extracting.
+
+          ---
+
+          NOTES
+
+      - name: Create release
+        run: |
+          flags=(--target "${{ github.sha }}" --title "netDigger v$VERSION" --notes-file notes.md --generate-notes)
+          if [ "${{ inputs.draft }}" = "true" ]; then flags+=(--draft); fi
+          if [ "${{ inputs.prerelease }}" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "v$VERSION" dist/* "${flags[@]}"

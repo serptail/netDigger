@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>NetDigger.Core</AssemblyName>
+    <RootNamespace>NetDigger.Core</RootNamespace>
+    <Description>Polite, scope-aware site crawler and resource discovery engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NetDigger.Core.Tests" />
+  </ItemGroup>
+
+</Project>

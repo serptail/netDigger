@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+netdigger-out/
+*.db
+*.db-wal
+*.db-shm
